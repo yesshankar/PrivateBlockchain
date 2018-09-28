@@ -10,7 +10,7 @@ const db = level(chainDB);
 function addLevelDBData(key,value){
     return new Promise((resolve, reject) => {
         db.put(key, value, function(err) {
-            if (err) return console.log('Block ' + key + ' submission failed', err);
+            if (err) reject('Block ' + key + ' submission failed');
             resolve('Block added successfully @ height ' + key);
           })
     });
@@ -21,7 +21,7 @@ function addLevelDBData(key,value){
 function getLevelDBData(key){
     return new Promise((resolve, reject) => {
         db.get(key, function(err, value) {
-            if (err) reject('No data found for the key ' + key);
+            if (err) reject('No block found @ block height = ' + key);
             //console.log('Value = ' + value);
             resolve(value);
           })

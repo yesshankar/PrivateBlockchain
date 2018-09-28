@@ -27,42 +27,49 @@ class Blockchain {
 
   // Add new block 
   addBlock(newBlock) {
+    return new Promise((resolve, reject) => {
+   
+      this.getBlockHeight().then((height) => {
+        // Check if Genesis Block exists, create if not, then add new Block
+        if (height == -1) {
 
-    this.getBlockHeight().then((height) => {
-      // Check if Genesis Block exists, create if not, then add new Block
-      if (height == -1) {
+          let genBlock = new Block('This is the first block in chain: Genesis Block');
+          genBlock.height = 0;
 
-        let genBlock = new Block('This is the first block in chain: Genesis Block');
-        genBlock.height = 0;
+          genBlock.time = new Date().getTime().toString().slice(0, -3);
+          genBlock.hash = SHA256(JSON.stringify(genBlock)).toString();
+          lvl.addLevelDBData(0, JSON.stringify(genBlock)).then((msg) => {
 
-        genBlock.time = new Date().getTime().toString().slice(0, -3);
-        genBlock.hash = SHA256(JSON.stringify(genBlock)).toString();
-        lvl.addLevelDBData(0, JSON.stringify(genBlock)).then((msg) => {
-
-          console.log('Genesis ' + msg);
-          this.addBlock(newBlock);  // This time Genesis Block was added, so calling again to add new Block
-        });
-
-      } else {
-
-        // Block height
-        newBlock.height = height + 1;
-        // UTC timestamp
-        newBlock.time = new Date().getTime().toString().slice(0, -3);
-        // previous block hash
-        this.getBlock(height).then((prevBlock) => {
-          newBlock.previousBlockHash = prevBlock.hash;
-
-          // Block hash with SHA256 using newBlock and converting to a string
-          newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-
-          // Adding block object to the chain
-          lvl.addLevelDBData(newBlock.height, JSON.stringify(newBlock)).then((msg) => {
-            console.log(msg);
-
+            console.log('Genesis ' + msg);
+            // This time Genesis Block was added, so calling again to add new Block
+            this.addBlock(newBlock).then((block) => {resolve(block)});  
           });
-        });
-      }
+
+        } else {
+
+          // Block height
+          newBlock.height = height + 1;
+          // UTC timestamp
+          newBlock.time = new Date().getTime().toString().slice(0, -3);
+          // previous block hash
+          this.getBlock(height).then((prevBlock) => {
+            newBlock.previousBlockHash = prevBlock.hash;
+
+            // Block hash with SHA256 using newBlock and converting to a string
+            newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+
+            // Adding block object to the chain
+            lvl.addLevelDBData(newBlock.height, JSON.stringify(newBlock)).then((msg) => {
+              console.log(msg);
+              resolve(JSON.parse(JSON.stringify(newBlock)));
+
+            }, (error) => {
+              console.log(error);
+              reject(error);
+            });
+          });
+        }
+      });
     });
   }
 
@@ -83,6 +90,7 @@ class Blockchain {
         resolve(JSON.parse(block));
       }, (error) => {
         console.log(error);
+        reject(error);
       });
     });
   }
@@ -124,9 +132,9 @@ class Blockchain {
 
         Promise.all([isValid, blockPrev, blockNext]).then((results) => {
           // validate block
-          if (!results[0]){
+          if (!results[0]) {
             errorLog.push(results[1].height);
-          } 
+          }
           // compare blocks hash link
           let blockHash = results[1].hash;
           let previousHash = results[2].previousBlockHash;
@@ -135,7 +143,7 @@ class Blockchain {
           }
 
           // check if all blocks has been processed to log errors
-          if(results[1].height == (currentBlockHeight-1)){
+          if (results[1].height == (currentBlockHeight - 1)) {
             if (errorLog.length > 0) {
               console.log('# of Block errors = ' + errorLog.length);
               console.log('Blocks: ' + errorLog);
@@ -146,11 +154,13 @@ class Blockchain {
         });
 
       }
-      
+
 
     });
   }
 }
+
+module.exports = {Block, Blockchain};
 
 /* ===== Testing Codes ========================================================
 |  Codes can be tested by commenting / uncommenting appropriate section below  |
@@ -173,7 +183,7 @@ let myBlockChain = new Blockchain();
 
 // ------------------------ Add block manually ----------------------------------
 
-// myBlockChain.addBlock(new Block('This is 1st manually added block')); // Does not return Promise.
+// myBlockChain.addBlock(new Block('This is 1st manually added block'));
 
 // ----------------------- Get current block height ------------------------------
 
