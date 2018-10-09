@@ -82,14 +82,34 @@ class Blockchain {
     });
   }
 
-  // get block
+  // get block by height
   getBlock(blockHeight) {
-    // return object as a single string
+
     return new Promise((resolve, reject) => {
       lvl.getLevelDBData(blockHeight).then((block) => {
-        resolve(JSON.parse(block));
+        resolve(block);
       }, (error) => {
         console.log(error);
+        reject(error);
+      });
+    });
+  }
+
+  getBlockByAddress(address){
+    return new Promise((resolve, reject) => {
+      lvl.getDataByAddress(address).then((blocks) => {
+        resolve(blocks);
+      }, (error) => {
+        reject(error);
+      });
+    });
+  }
+
+  getBlockByHash(hash){
+    return new Promise((resolve, reject) => {
+      lvl.getDataByHash(hash).then((block) => {
+        resolve(block);
+      }, (error) => {
         reject(error);
       });
     });
