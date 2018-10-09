@@ -140,7 +140,12 @@ To post a new block,user must follow the steps to verify identity.
     }
     ```
     > **Note:** Star must have all the properties shown in above request example. You can add other optional properties.
-    JSON object schema must match as shown in the example above. Otherwise you will get an error message.
+    JSON object schema must match as shown in the example above and story **should not exceed 500 bytes** size limit . Otherwise you will get an error message like:
+    ```
+    [
+        "error": "Exceeds star story size limit of 500 bytes. Received 834 bytes"
+    ]
+    ```
 
 ### GET endpoint usage
 You can get block information in three ways:

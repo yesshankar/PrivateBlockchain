@@ -14,7 +14,7 @@ blockRouter.get('/:blockHeight', (req, res) => {
 
 blockRouter.post('/', (req, res) => {
 
-    // Check if posted data has all required properties in proper format
+    // Check if posted data has all required properties in proper format and story doesn't exceed 500 bytes
     checkStarObjectSchema(req.body).then((starObj) => {
         
         new userManager.UserSession().getUser(starObj.address).then((value) => {
@@ -54,6 +54,7 @@ blockRouter.post('/', (req, res) => {
 
 });
 
+// Check star object schema and the byte size of star story
 function checkStarObjectSchema(starObj) {
     return new Promise((resolve, reject) => {
         let errors = [];
@@ -74,6 +75,14 @@ function checkStarObjectSchema(starObj) {
                     if (starObj.star.hasOwnProperty(key)) {
                         if (typeof starObj.star[key] !== "string") {
                             errors.push(`${key} value was expected in string but found ${typeof starObj.star[key]} type`);
+                        }else{
+                            // Check if story size is within limit of 500 bytes max.
+                            if(key === "story"){
+                                let storySize = Buffer.byteLength(starObj.star.story, 'utf8');
+                                if(storySize > 500){
+                                    errors.push(`Exceeds star story size limit of 500 bytes. Received ${storySize} bytes`);
+                                }
+                            }
                         }
                     } else {
                         errors.push(`${key} property not found`);
