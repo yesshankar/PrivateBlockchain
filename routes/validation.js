@@ -12,15 +12,32 @@ module.exports = {
             let user = new userManager.User(req.body.address);
             let userMgr = new userManager.UserSession();
 
-            userMgr.addUser(user.address, JSON.stringify(user)).then((value) => {
+            // Check if request was made with this address before, if not create new timestamp
+            userMgr.getUser(req.body.address).then((value) => {
 
-                setTimeout(userMgr.removeUser, JSON.parse(value).validationWindow * 1000, JSON.parse(value).address);
+                user = JSON.parse(value);
 
-                res.json(JSON.parse(value));
-            }, (error) => {
-                res.json({ "error": error });
+                let requestTime = parseInt(user.requestTimeStamp);
+                let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+
+                user.validationWindow = 300 - (currentTime - requestTime);
+
+                userMgr.addUser(user.address, JSON.stringify(user)).then((value) => {
+                    res.json(JSON.parse(value));
+                }, (error) => res.json({"error": error}));
+
+            }, (error) => { // request was NOT made with this address within validation window
+                userMgr.addUser(user.address, JSON.stringify(user)).then((value) => {
+
+                    setTimeout(deleteUser, (300 * 1000), JSON.parse(value).address);
+    
+                    res.json(JSON.parse(value));
+                }, (error) => {
+                    res.json({ "error": error });
+                });
             });
 
+            
         } else {
             res.send({ "error": "No address property found!, POST data is not in proper format." })
         }
@@ -39,7 +56,7 @@ module.exports = {
                 let requestTime = parseInt(user.requestTimeStamp);
                 let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
 
-                user.validationWindow -= (currentTime - requestTime);
+                user.validationWindow = 300 - (currentTime - requestTime);
 
                 let result = { "registerStar": false, "status": user }
 
@@ -67,4 +84,17 @@ module.exports = {
         }
     }
 
+}
+
+function deleteUser(address){
+    let sessionMgr = new userManager.UserSession();
+
+    sessionMgr.getUser(address).then((value) => {
+        let user = JSON.parse(value);
+
+        // Remove user data only if timed out and has not validated
+        if(!(user.hasOwnProperty("messageSignature") && user.messageSignature === "valid")){
+            sessionMgr.removeUser(user.address);
+        }
+    });
 }

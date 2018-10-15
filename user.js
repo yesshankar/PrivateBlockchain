@@ -44,27 +44,20 @@ class UserSession{
 
 }
 
-// Self envoking function to clear up timed out User Data that were left after sudden server shutdwon on server start up
+// Self envoking function to clear up User Data that were left after sudden server shutdwon on server start up
 (function clearUserDB(){
-    let i = 0, j = 0;
+    let i = 0;
     let userMgr = new UserSession();
 
     userDB.createReadStream().on('data', (data) => {
         i++;
 
-        let user = JSON.parse(data.value);
-        let requestTime = parseInt(user.requestTimeStamp);
-        let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+        userMgr.removeUser(data.key);
 
-        user.validationWindow -= (currentTime - requestTime);
-
-        if(user.validationWindow <= 0){
-            userMgr.removeUser(data.key).then((value) => {j++});
-        }
     }).on('err', (err) => {
         console.log(err);
     }).on('close', () => {
-        console.log(`${i-j} requests are still active since last server shutdown, ${j} timed out user data is removed on server startup`);
+        console.log(`${i} old user data is removed on server startup`);
     });
 })();
 
